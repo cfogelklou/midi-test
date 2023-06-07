@@ -4,10 +4,9 @@
  */
 
 import { spawn } from 'child_process';
-import SuperTest from 'supertest';
+
 import Path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import main from './main.js';
 
 describe('Example Test', function () {
   it('should init without errors', async function () {

@@ -1,8 +1,8 @@
-# NodeJS Starter Project
+# Test project which can output notes to a midi keyboard.
 
-Project bootstrapped using [NodeJS Starter ToolKit](https://github.com/vitorsalgado/create-nodejs-ts).  
-Visit the repository for more details.
+This project is just written on a whim to see if I can output notes
+from my m1 mac to a casio keyboard I own.
 
-## Getting Started
+In its current form, it can!
 
-Review the generated code, and it's recommended to run a `npm init` to adjust basic project configurations before start.
+More to come...

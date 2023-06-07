@@ -6,10 +6,6 @@
  */
 
 import 'dotenv/config';
-import { createServer, IncomingMessage, ServerResponse } from 'http';
-import { resolve } from 'path';
-import { fileURLToPath } from 'url';
-import { Config } from './config.js';
 
 import * as midi from 'midi';
 
@@ -100,11 +96,11 @@ export function ParseNote(str: string): NoteAndOctave {
     }
     noteSymbolStr = str.slice(0, 2);
     if (noteSharpFlat === '#') {
-      noteIdx = SHARP_NOTE_NAMES.findIndex((value: string, index: number) => {
+      noteIdx = SHARP_NOTE_NAMES.findIndex((value: string, _i: number) => {
         return value.toUpperCase() === noteSymbolStr.toUpperCase();
       });
     } else {
-      noteIdx = FLAT_NOTE_NAMES.findIndex((value: string, index: number) => {
+      noteIdx = FLAT_NOTE_NAMES.findIndex((value: string, _i: number) => {
         return value.toUpperCase() === noteSymbolStr.toUpperCase();
       });
     }
@@ -115,7 +111,7 @@ export function ParseNote(str: string): NoteAndOctave {
     } else {
       invalidOctave = true;
     }
-    noteIdx = SHARP_NOTE_NAMES.findIndex((value: string, index: number) => {
+    noteIdx = SHARP_NOTE_NAMES.findIndex((value: string, _i: number) => {
       return value.toUpperCase() === noteSymbolStr.toUpperCase();
     });
   }
@@ -146,63 +142,38 @@ async function runTest() {
   //const output = new midi.Output()
   const output = new Output();
   const portCount = output.getPortCount();
-  console.log('portCount:', portCount);
-  console.log('Opening port', 0);
-  console.log('Portname:', output.getPortName(0));
+  if (portCount <= 0) {
+    console.log('No midi ports to open');
+  } else {
+    console.log('PortCount:' + portCount);
+    console.log('Opening port:' + 0);
+    console.log('Portname:' + output.getPortName(0));
 
-  output.openPort(0);
+    output.openPort(0);
+    output.openVirtualPort('MIDI Keyboard');
 
-  //console.log('Ports:', JSON.stringify(portNames, null, 2));
-  // const noteOnMessage: midi.MidiMessage = [0x90, 60, 127]; // note on message (60 = middle C)
-  // const noteOffMessage: midi.MidiMessage = [0x80, 60, 0]; // note off message
+    for (let i = 0; i < 10; i++) {
+      console.log('sending note on 1');
+      output.send(noteOnMessage1);
+      await wait(2000);
+      output.send(noteOffMessage1);
+      console.log('sending note off 1');
+      await wait(2000);
 
-  output.openVirtualPort('MIDI Keyboard');
+      console.log('sending note on 2');
+      output.send(noteOnMessage2);
+      await wait(2000);
+      output.send(noteOffMessage2);
+      console.log('sending note off 2');
+      await wait(2000);
+    }
 
-  while (true) {
-    console.log('sending note on 1');
-    output.send(noteOnMessage1);
-    await wait(2000);
-    output.send(noteOffMessage1);
-    console.log('sending note off 1');
-    await wait(2000);
-
-    console.log('sending note on 2');
-    output.send(noteOnMessage2);
-    await wait(2000);
-    output.send(noteOffMessage2);
-    console.log('sending note off 2');
-    await wait(2000);
+    output.closePort();
   }
-
-  output.closePort();
 }
 
-runTest();
-
-/*
-const nodePath = resolve(process.argv[1])
-const modulePath = resolve(fileURLToPath(import.meta.url))
-const isCLI = nodePath === modulePath
-
-export default function main(port: number = Config.port) {
-  const requestListener = (request: IncomingMessage, response: ServerResponse) => {
-    response.setHeader('content-type', 'text/plain;charset=utf8')
-    response.writeHead(200, 'OK')
-    response.end('Olá, Hola, Hello!')
-  }
-
-  const server = createServer(requestListener)
-
-  if (isCLI) {
-    server.listen(port)
-    // eslint-disable-next-line no-console
-    console.log(`Listening on port: ${port}`)
-  }
-
-  return server
+export default function main() {
+  runTest();
 }
 
-if (isCLI) {
-  main()
-}
-*/
+main();

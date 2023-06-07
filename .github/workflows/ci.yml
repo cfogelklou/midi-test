@@ -2,11 +2,32 @@ name: ci
 
 on:
   push:
+    # Sequence of patterns matched against refs/heads
     branches:
-      - main
-      - '[0-9]+.x'
-    tags:
-      - '*'
+      - master
+      - devel
+      - strobopro_apps
+
+  pull_request:
+    types:
+      - labeled
+      - unlabeled
+      - synchronize
+      - opened
+      - edited
+      - ready_for_review
+      - reopened
+      - unlocked
+
+  pull_request_review:
+    types:
+      - submitted
+
+  # Manual trigger.
+  workflow_dispatch:
+
+env:
+  RELEASE: release
 
 jobs:
   build:

@@ -6,10 +6,12 @@
  */
 
 import 'dotenv/config';
+import { on } from 'events';
 
 import * as midi from 'midi';
 
 import pkg from 'midi';
+import { off } from 'process';
 const { Output } = pkg;
 
 function wait(ms: number) {
@@ -144,20 +146,22 @@ async function runTest() {
     output.openPort(0);
     output.openVirtualPort('MIDI Keyboard');
 
-    const noteAndOctave: NoteAndOctave = ParseNote('A0');
-    let done: boolean = false;
-    for (let program = 0; program < 12; program++) {
+    for (let program = 0; program < 256; program++) {
+      console.log('Program:' + program);
       // Select new midi instrument
       const programChangeMessage: midi.MidiMessage = [0xc0 + channel, program, 0x00];
       output.send(programChangeMessage);
 
+      let done: boolean = false;
+      const noteAndOctave: NoteAndOctave = ParseNote('A0');
+
       while (!done) {
-        await playNote(noteAndOctave);
+        await playNote(noteAndOctave, 700, 500);
         noteAndOctave.note++;
         if (noteAndOctave.note > 11) {
           noteAndOctave.note = 0;
           noteAndOctave.octave++;
-          if (noteAndOctave.octave > 0) {
+          if (noteAndOctave.octave >= 9) {
             done = true;
             break;
           }
@@ -170,7 +174,7 @@ async function runTest() {
     console.log('No midi ports to open');
   }
 
-  async function playNote(noteAndOctave: NoteAndOctave) {
+  async function playNote(noteAndOctave: NoteAndOctave, onTime: number = 700, offTime: number = 500) {
     // Print the note and octave.
     const noteStr = getCOffsetName(noteAndOctave.note);
     console.log('note:' + noteStr + ' octave:' + noteAndOctave.octave);
@@ -179,10 +183,10 @@ async function runTest() {
 
     const noteOnMessage1: midi.MidiMessage = [0x90 + channel, note, 127];
     output.send(noteOnMessage1);
-    await wait(700);
+    await wait(onTime);
     const noteOffMessage1: midi.MidiMessage = [0x90 + channel, note, 0];
     output.send(noteOffMessage1);
-    await wait(500);
+    await wait(offTime);
   }
 }
 

@@ -168,10 +168,11 @@ async function runTest() {
     output.openPort(0);
     output.openVirtualPort('MIDI Keyboard');
 
-    for (let program = 0; program < 256; program++) {
+    for (let program = 0; program < 128; program++) {
       console.log('Program:' + program);
       // Select new midi instrument
-      const programChangeMessage: midi.MidiMessage = [0xc0 + channel, program, 0x00];
+      // Need to cast to any because MidiMessage if fixed 3 bytes, but it doesn't work unless the array is 2 bytes.
+      const programChangeMessage: any = [0xc0 + channel, program];
       output.send(programChangeMessage);
 
       let done: boolean = false;
@@ -179,17 +180,23 @@ async function runTest() {
 
       while (!done) {
         const noteStr = getCOffsetName(noteAndOctave.note);
-        const r = new Recorder(program.toFixed(0) + '_' + noteStr + noteAndOctave.octave.toFixed(0) + '.wav');
-        await playNote(noteAndOctave, 700, 500);
+        const r = new Recorder(
+          'recordings/' + program.toFixed(0) + '_' + noteStr + noteAndOctave.octave.toFixed(0) + '.wav',
+        );
+        await playNote(noteAndOctave, 100, 10);
         noteAndOctave.note++;
         if (noteAndOctave.note > 11) {
           noteAndOctave.note = 0;
           noteAndOctave.octave++;
-          if (noteAndOctave.octave >= 9) {
-            done = true;
-            break;
-          }
         }
+        if (noteAndOctave.octave >= 9) {
+          if (noteAndOctave.note === 4) {
+            done = true;
+          }
+
+          break;
+        }
+
         r.kill();
       }
     }

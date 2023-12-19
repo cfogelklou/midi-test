@@ -9,9 +9,11 @@ import 'dotenv/config';
 import { on } from 'events';
 
 import * as midi from 'midi';
+import { spawn } from 'child_process';
 
 import pkg from 'midi';
 import { off } from 'process';
+import * as fs from 'fs';
 const { Output } = pkg;
 
 function wait(ms: number) {
@@ -130,7 +132,27 @@ export function NoteAndOctaveToMidiIdx(c: NoteAndOctave): number {
   return c.octave * 12 + c.note + MIDI_IDX_C0;
 }
 
-//const C4: NoteAndOctave = { note: NoteIdx.C, octave: 4 };
+class Recorder {
+  recorder: any;
+  constructor(name: string) {
+    // Create a writable stream
+    const file = fs.createWriteStream(name, { encoding: 'binary' });
+
+    const sampleRate = 44100;
+    // Spawn a child process to run the 'sox' command
+    this.recorder = spawn('sox', ['-d', '-r' + sampleRate.toString(), '-t', 'wav', '-']);
+
+    // Pipe the output of 'sox' to the file
+    this.recorder.stdout.pipe(file);
+  }
+
+  kill() {
+    if (this.recorder) {
+      this.recorder.kill();
+      this.recorder = null;
+    }
+  }
+}
 
 const channel = 1; // MIDI channel 1 is channel 0 in the midi library
 
@@ -156,6 +178,8 @@ async function runTest() {
       const noteAndOctave: NoteAndOctave = ParseNote('A0');
 
       while (!done) {
+        const noteStr = getCOffsetName(noteAndOctave.note);
+        const r = new Recorder(program.toFixed(0) + '_' + noteStr + noteAndOctave.octave.toFixed(0) + '.wav');
         await playNote(noteAndOctave, 700, 500);
         noteAndOctave.note++;
         if (noteAndOctave.note > 11) {
@@ -166,6 +190,7 @@ async function runTest() {
             break;
           }
         }
+        r.kill();
       }
     }
 
@@ -177,6 +202,9 @@ async function runTest() {
   async function playNote(noteAndOctave: NoteAndOctave, onTime: number = 700, offTime: number = 500) {
     // Print the note and octave.
     const noteStr = getCOffsetName(noteAndOctave.note);
+
+    await wait(100);
+
     console.log('note:' + noteStr + ' octave:' + noteAndOctave.octave);
 
     const note = NoteAndOctaveToMidiIdx(noteAndOctave);

@@ -21,13 +21,13 @@
     "tslib": "^2.3.1"
   },
   "devDependencies": {
-    "@types/midi": "^2.0.0",
     "@commitlint/cli": "^17.0.0",
-    "@commitlint/config-conventional": "^17.0.0",    
+    "@commitlint/config-conventional": "^17.0.0",
     "@jest/globals": "^28.0.0",
     "@jest/types": "^28.0.0",
     "@types/jest": "^27.4.1",
-    "@types/node": "^18.0.0",
+    "@types/midi": "^2.0.0",
+    "@types/node": "^18.19.3",
     "@types/supertest": "^2.0.12",
     "@typescript-eslint/eslint-plugin": "^5.17.0",
     "@typescript-eslint/parser": "^5.17.0",

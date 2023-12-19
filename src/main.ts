@@ -147,7 +147,7 @@ class Recorder {
     this.recorder.stdout.pipe(file);
   }
 
-  kill() {
+  stop() {
     if (this.recorder) {
       this.recorder.kill();
       this.recorder = null;
@@ -183,8 +183,8 @@ async function runTest() {
       while (!done) {
         const noteStr = getCOffsetName(noteAndOctave.note);
         r.start('recordings/' + program.toFixed(0) + '_' + noteStr + noteAndOctave.octave.toFixed(0) + '.wav');
-        for (let volume = 10; volume <= 120; volume += 10) {
-          await playNote(noteAndOctave, volume, 50, 10);
+        for (let volume = 120; volume <= 120; volume += 10) {
+          await playNote(noteAndOctave, volume);
         }
         noteAndOctave.note++;
         if (noteAndOctave.note > 11) {
@@ -197,7 +197,8 @@ async function runTest() {
           done = true;
         }
 
-        r.kill();
+        r.stop();
+        await wait(2000);
       }
     }
 

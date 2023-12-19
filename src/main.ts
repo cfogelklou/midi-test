@@ -29,6 +29,7 @@ export const MIDDLE_C_DEFAULT_OCTAVE = 4;
 export const MIDI_IDX_C0 = 12;
 export const MIDI_IDX_C4 = 60;
 export const MIDI_IDX_A4 = 69;
+export const MIDI_IDX_CS9 = 121;
 // NoteAndOctave scale note and octave of 0,0 ==> A4 440Hz.
 // A4 is at midi index 69.
 export const A4_MIDI_IDX_OFFSET = 69 - 12;
@@ -134,8 +135,8 @@ export function NoteAndOctaveToMidiIdx(c: NoteAndOctave): number {
 
 class Recorder {
   recorder: any;
-  constructor(name: string) {
-    // Create a writable stream
+
+  start(name: string) {
     const file = fs.createWriteStream(name, { encoding: 'binary' });
 
     const sampleRate = 44100;
@@ -167,8 +168,9 @@ async function runTest() {
 
     output.openPort(0);
     output.openVirtualPort('MIDI Keyboard');
+    const r = new Recorder();
 
-    for (let program = 0; program < 128; program++) {
+    for (let program = 0; program <= 31; program++) {
       console.log('Program:' + program);
       // Select new midi instrument
       // Need to cast to any because MidiMessage if fixed 3 bytes, but it doesn't work unless the array is 2 bytes.
@@ -176,25 +178,23 @@ async function runTest() {
       output.send(programChangeMessage);
 
       let done: boolean = false;
-      const noteAndOctave: NoteAndOctave = ParseNote('A0');
+      const noteAndOctave: NoteAndOctave = ParseNote('C-1');
 
       while (!done) {
         const noteStr = getCOffsetName(noteAndOctave.note);
-        const r = new Recorder(
-          'recordings/' + program.toFixed(0) + '_' + noteStr + noteAndOctave.octave.toFixed(0) + '.wav',
-        );
-        await playNote(noteAndOctave, 100, 10);
+        r.start('recordings/' + program.toFixed(0) + '_' + noteStr + noteAndOctave.octave.toFixed(0) + '.wav');
+        for (let volume = 10; volume <= 120; volume += 10) {
+          await playNote(noteAndOctave, volume, 50, 10);
+        }
         noteAndOctave.note++;
         if (noteAndOctave.note > 11) {
           noteAndOctave.note = 0;
           noteAndOctave.octave++;
         }
-        if (noteAndOctave.octave >= 9) {
-          if (noteAndOctave.note === 4) {
-            done = true;
-          }
 
-          break;
+        const midiIdx = NoteAndOctaveToMidiIdx(noteAndOctave);
+        if (midiIdx >= MIDI_IDX_CS9) {
+          done = true;
         }
 
         r.kill();
@@ -206,17 +206,24 @@ async function runTest() {
     console.log('No midi ports to open');
   }
 
-  async function playNote(noteAndOctave: NoteAndOctave, onTime: number = 700, offTime: number = 500) {
+  async function playNote(
+    noteAndOctave: NoteAndOctave,
+    volume: number = 127,
+    onTime: number = 700,
+    offTime: number = 500,
+  ) {
     // Print the note and octave.
     const noteStr = getCOffsetName(noteAndOctave.note);
 
     await wait(100);
 
-    console.log('note:' + noteStr + ' octave:' + noteAndOctave.octave);
+    console.log(
+      'note:' + noteStr + ' octave:' + noteAndOctave.octave + ' midi:' + NoteAndOctaveToMidiIdx(noteAndOctave),
+    );
 
     const note = NoteAndOctaveToMidiIdx(noteAndOctave);
 
-    const noteOnMessage1: midi.MidiMessage = [0x90 + channel, note, 127];
+    const noteOnMessage1: midi.MidiMessage = [0x90 + channel, note, volume];
     output.send(noteOnMessage1);
     await wait(onTime);
     const noteOffMessage1: midi.MidiMessage = [0x90 + channel, note, 0];

@@ -146,16 +146,22 @@ async function runTest() {
 
     const noteAndOctave: NoteAndOctave = ParseNote('A0');
     let done: boolean = false;
-    while (!done) {
-      await playNote(noteAndOctave);
-      noteAndOctave.note++;
-      if (noteAndOctave.note > 11) {
-        noteAndOctave.note = 0;
-        noteAndOctave.octave++;
-      }
-      if (noteAndOctave.octave > 10) {
-        done = true;
-        break;
+    for (let program = 0; program < 12; program++) {
+      // Select new midi instrument
+      const programChangeMessage: midi.MidiMessage = [0xc0 + channel, program, 0x00];
+      output.send(programChangeMessage);
+
+      while (!done) {
+        await playNote(noteAndOctave);
+        noteAndOctave.note++;
+        if (noteAndOctave.note > 11) {
+          noteAndOctave.note = 0;
+          noteAndOctave.octave++;
+          if (noteAndOctave.octave > 0) {
+            done = true;
+            break;
+          }
+        }
       }
     }
 
@@ -171,13 +177,11 @@ async function runTest() {
 
     const note = NoteAndOctaveToMidiIdx(noteAndOctave);
 
-    console.log('sending note on 1');
     const noteOnMessage1: midi.MidiMessage = [0x90 + channel, note, 127];
     output.send(noteOnMessage1);
     await wait(700);
     const noteOffMessage1: midi.MidiMessage = [0x90 + channel, note, 0];
     output.send(noteOffMessage1);
-    console.log('sending note off 1');
     await wait(500);
   }
 }

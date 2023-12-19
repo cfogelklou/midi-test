@@ -129,22 +129,14 @@ export function NoteAndOctaveToMidiIdx(c: NoteAndOctave): number {
 }
 
 //const C4: NoteAndOctave = { note: NoteIdx.C, octave: 4 };
-const C4Midi = NoteAndOctaveToMidiIdx(ParseNote('C4'));
-const CS4Midi = NoteAndOctaveToMidiIdx(ParseNote('C#4'));
 
 const channel = 1; // MIDI channel 1 is channel 0 in the midi library
-const noteOnMessage1: midi.MidiMessage = [0x90 + channel, C4Midi, 127]; // note on message (60 = middle C, 127 = velocity)
-const noteOffMessage1: midi.MidiMessage = [0x90 + channel, C4Midi, 0]; // note off message
-const noteOnMessage2: midi.MidiMessage = [0x90 + channel, CS4Midi, 127]; // note on message (60 = middle C, 127 = velocity)
-const noteOffMessage2: midi.MidiMessage = [0x90 + channel, CS4Midi, 0]; // note off message
 
 async function runTest() {
   //const output = new midi.Output()
   const output = new Output();
   const portCount = output.getPortCount();
-  if (portCount <= 0) {
-    console.log('No midi ports to open');
-  } else {
+  if (portCount > 0) {
     console.log('PortCount:' + portCount);
     console.log('Opening port:' + 0);
     console.log('Portname:' + output.getPortName(0));
@@ -152,23 +144,41 @@ async function runTest() {
     output.openPort(0);
     output.openVirtualPort('MIDI Keyboard');
 
-    for (let i = 0; i < 10; i++) {
-      console.log('sending note on 1');
-      output.send(noteOnMessage1);
-      await wait(2000);
-      output.send(noteOffMessage1);
-      console.log('sending note off 1');
-      await wait(2000);
-
-      console.log('sending note on 2');
-      output.send(noteOnMessage2);
-      await wait(2000);
-      output.send(noteOffMessage2);
-      console.log('sending note off 2');
-      await wait(2000);
+    const noteAndOctave: NoteAndOctave = ParseNote('A0');
+    let done: boolean = false;
+    while (!done) {
+      await playNote(noteAndOctave);
+      noteAndOctave.note++;
+      if (noteAndOctave.note > 11) {
+        noteAndOctave.note = 0;
+        noteAndOctave.octave++;
+      }
+      if (noteAndOctave.octave > 10) {
+        done = true;
+        break;
+      }
     }
 
     output.closePort();
+  } else {
+    console.log('No midi ports to open');
+  }
+
+  async function playNote(noteAndOctave: NoteAndOctave) {
+    // Print the note and octave.
+    const noteStr = getCOffsetName(noteAndOctave.note);
+    console.log('note:' + noteStr + ' octave:' + noteAndOctave.octave);
+
+    const note = NoteAndOctaveToMidiIdx(noteAndOctave);
+
+    console.log('sending note on 1');
+    const noteOnMessage1: midi.MidiMessage = [0x90 + channel, note, 127];
+    output.send(noteOnMessage1);
+    await wait(700);
+    const noteOffMessage1: midi.MidiMessage = [0x90 + channel, note, 0];
+    output.send(noteOffMessage1);
+    console.log('sending note off 1');
+    await wait(500);
   }
 }
 
